@@ -1,6 +1,9 @@
+
 import { createWorker } from 'tesseract.js'
 
-// In Tesseract.js v5, pass options as the SECOND argument.
+// In Tesseract.js v5, createWorker signature is (langs?: string|string[]|Lang[], options?: WorkerOptions).
+// We pass options as the SECOND argument to satisfy TypeScript, and load languages later via loadLanguage().
+
 const WORKER_OPTS = {
   workerPath: 'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/worker.min.js',
   langPath: 'https://tessdata.projectnaptha.com/5',
@@ -11,7 +14,7 @@ let worker: any | null = null
 
 async function getWorker() {
   if (worker) return worker
-  // Pass undefined for langs, and WORKER_OPTS as the options param
+  // Pass undefined for langs, and WORKER_OPTS as the options param to satisfy types
   worker = await createWorker(undefined, WORKER_OPTS as any)
   await worker.loadLanguage('eng')
   await worker.initialize('eng')
