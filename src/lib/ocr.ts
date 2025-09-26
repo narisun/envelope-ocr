@@ -1,5 +1,6 @@
 import { createWorker } from 'tesseract.js'
 
+// In Tesseract.js v5, pass options as the SECOND argument.
 const WORKER_OPTS = {
   workerPath: 'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/worker.min.js',
   langPath: 'https://tessdata.projectnaptha.com/5',
@@ -10,7 +11,8 @@ let worker: any | null = null
 
 async function getWorker() {
   if (worker) return worker
-  worker = await createWorker(WORKER_OPTS)
+  // Pass undefined for langs, and WORKER_OPTS as the options param
+  worker = await createWorker(undefined, WORKER_OPTS as any)
   await worker.loadLanguage('eng')
   await worker.initialize('eng')
   return worker
