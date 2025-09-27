@@ -6,6 +6,7 @@ export type EnvelopeRow = {
   id: string
   scannedAt: string
   code: string
+  name?: string
   addressRaw: string
   street?: string
   city?: string

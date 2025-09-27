@@ -1,39 +1,77 @@
 import type { EnvelopeRow } from './store'
 
-function csvEscape(s: string | undefined) {
+function htmlEscape(s: string | undefined) {
   if (!s) return ''
-  if (/[",\n]/.test(s)) return '"' + s.replace(/"/g, '""') + '"'
   return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
 }
 
-export function rowsToCSV(rows: EnvelopeRow[]) {
-  const headers = ['scanned_at','code','street','city','state','zip','address_raw','conf_code','conf_addr']
-  const lines = [headers.join(',')]
-  for (const r of rows.slice().reverse()) {
-    lines.push([
-      r.scannedAt, r.code, r.street, r.city, r.state, r.zip, r.addressRaw,
-      (r.confCode ?? 0).toFixed(2), (r.confAddr ?? 0).toFixed(2)
-    ].map(csvEscape).join(','))
-  }
-  return lines.join('\n')
+function formatPlain(r: EnvelopeRow) {
+  const parts = [
+    new Date(r.scannedAt).toLocaleString(),
+    r.name ?? '',
+    r.code,
+    r.street ?? '',
+    r.city ?? '',
+    r.state ?? '',
+    r.zip ?? '',
+    (r.confCode ?? 0).toFixed(2),
+    (r.confAddr ?? 0).toFixed(2),
+    r.addressRaw
+  ]
+  return parts.join('\t')
 }
 
-export async function shareOrDownloadCSV(csv: string, filename = 'envelopes.csv') {
-  const file = new File([csv], filename, { type: 'text/csv' })
-  // Try Web Share with files
-  // @ts-ignore
-  if (navigator.share && navigator.canShare?.({ files: [file] })) {
-    // @ts-ignore
-    await navigator.share({ files: [file], title: 'Daily Envelopes', text: 'Mapping table attached' })
+export function rowsToHTMLTable(rows: EnvelopeRow[]) {
+  const headers = ['Scanned at','Name','Code','Street','City','State','ZIP','Conf(code)','Conf(addr)','Address raw']
+  const headerHtml = headers.map(h => `<th>${h}</th>`).join('')
+  const body = rows.map(r => `
+    <tr>
+      <td>${htmlEscape(new Date(r.scannedAt).toLocaleString())}</td>
+      <td>${htmlEscape(r.name)}</td>
+      <td>${htmlEscape(r.code)}</td>
+      <td>${htmlEscape(r.street)}</td>
+      <td>${htmlEscape(r.city)}</td>
+      <td>${htmlEscape(r.state)}</td>
+      <td>${htmlEscape(r.zip)}</td>
+      <td>${htmlEscape((r.confCode ?? 0).toFixed(2))}</td>
+      <td>${htmlEscape((r.confAddr ?? 0).toFixed(2))}</td>
+      <td>${htmlEscape(r.addressRaw)}</td>
+    </tr>`).join('')
+  return `<table><thead><tr>${headerHtml}</tr></thead><tbody>${body}</tbody></table>`
+}
+
+export async function copyRowsAsHTMLTable(rows: EnvelopeRow[]) {
+  const html = rowsToHTMLTable(rows)
+  const text = rows.map(formatPlain).join('\n')
+
+  const clipboard = navigator.clipboard
+  const ClipboardItemCtor = typeof window !== 'undefined' ? (window as any).ClipboardItem : undefined
+
+  if (clipboard?.write && ClipboardItemCtor) {
+    const item = new ClipboardItemCtor({
+      'text/html': new Blob([html], { type: 'text/html' }),
+      'text/plain': new Blob([text], { type: 'text/plain' })
+    })
+    await clipboard.write([item])
     return
   }
-  // Fallback: download
-  const url = URL.createObjectURL(file)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = filename
-  document.body.appendChild(a)
-  a.click()
-  a.remove()
-  URL.revokeObjectURL(url)
+  if (clipboard?.writeText) {
+    await clipboard.writeText(text)
+    return
+  }
+
+  const textarea = document.createElement('textarea')
+  textarea.value = text
+  textarea.style.position = 'fixed'
+  textarea.style.opacity = '0'
+  document.body.appendChild(textarea)
+  textarea.focus()
+  textarea.select()
+  document.execCommand('copy')
+  textarea.remove()
 }
