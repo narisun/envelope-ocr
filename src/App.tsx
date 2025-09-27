@@ -32,6 +32,7 @@ export default function App() {
       id: uuid(),
       scannedAt: new Date().toISOString(),
       code: qr,
+      name: addr.name,
       addressRaw: addr.addressRaw,
       street: addr.street,
       city: addr.city,

@@ -4,11 +4,6 @@ type Props = {
   onCapture: (blob: Blob, thumbDataUrl: string) => void
 }
 
-function isSafariIOS() {
-  const ua = navigator.userAgent
-  return /iP(ad|hone|od)/.test(ua) || (ua.includes('Safari') && !ua.includes('Chrome') && /Mac/.test(navigator.platform) && 'ontouchend' in document)
-}
-
 export default function CameraView({ onCapture }: Props) {
   const videoRef = useRef<HTMLVideoElement>(null)
   const streamRef = useRef<MediaStream | null>(null)
@@ -26,6 +21,7 @@ export default function CameraView({ onCapture }: Props) {
     setErr(null)
     setReady(false)
     try {
+      stopStream()
       const constraintsPrimary: MediaStreamConstraints = {
         video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } },
         audio: false
@@ -111,29 +107,6 @@ export default function CameraView({ onCapture }: Props) {
     }, 'image/jpeg', 0.9)
   }
 
-  function fileFallback(ev: React.ChangeEvent<HTMLInputElement>) {
-    const f = ev.target.files?.[0]
-    if (!f) return
-    const img = new Image()
-    const url = URL.createObjectURL(f)
-    img.onload = () => {
-      const canvas = document.createElement('canvas')
-      const w = img.width, h = img.height
-      canvas.width = w; canvas.height = h
-      canvas.getContext('2d')!.drawImage(img, 0, 0)
-      canvas.toBlob(b => {
-        if (!b) return
-        const t = document.createElement('canvas')
-        const scale = 320 / Math.max(w, h)
-        t.width = Math.round(w * scale); t.height = Math.round(h * scale)
-        t.getContext('2d')!.drawImage(img, 0, 0, w, h, 0, 0, t.width, t.height)
-        onCapture(b, t.toDataURL('image/jpeg', 0.7))
-        URL.revokeObjectURL(url)
-      }, 'image/jpeg', 0.9)
-    }
-    img.src = url
-  }
-
   return (
     <div className="card capture">
       {!started ? (
@@ -142,21 +115,22 @@ export default function CameraView({ onCapture }: Props) {
           <p>Tap the button below to start the camera. On iOS PWAs, a user tap is required.</p>
           <div className="row">
             <button className="primary" onClick={handleStartClick}>Enable Camera</button>
-            <input type="file" accept="image/*" capture="environment" onChange={fileFallback} className="ghost"/>
           </div>
         </div>
       ) : (
         <>
-          <video ref={videoRef} playsInline muted autoPlay />
+          <div className="camera-viewport">
+            <video ref={videoRef} playsInline muted autoPlay />
+            <div className="camera-guide" aria-hidden="true" />
+          </div>
           {!ready && <div style={{padding:16}}>Initializing camera…</div>}
           {err && (
             <div style={{padding:16}}>
               <p>Camera error: {err}</p>
-              <input type="file" accept="image/*" capture="environment" onChange={fileFallback}/>
             </div>
           )}
           <div className="footer row" style={{justifyContent:'space-between'}}>
-            <input type="file" accept="image/*" capture="environment" onChange={fileFallback} className="ghost"/>
+            <button className="ghost" onClick={startStream}>Restart camera</button>
             <button className="primary" onClick={capture} disabled={!ready}>Snap</button>
           </div>
         </>
