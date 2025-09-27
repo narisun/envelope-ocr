@@ -1,40 +1,48 @@
 import React, { useState } from 'react'
-import CameraView from './components/CameraView'
-import ReviewCard from './components/ReviewCard'
+import AddressCapture from './components/AddressCapture'
+import QRCapture from './components/QRCapture'
 import TableView from './components/TableView'
 import { useApp } from './lib/store'
 
-function uuid() {
-  return crypto.randomUUID?.() || Math.random().toString(36).slice(2)
-}
+function uuid() { return crypto.randomUUID?.() || Math.random().toString(36).slice(2) }
 
 export default function App() {
   const addRow = useApp(s => s.addRow)
-  const [lastBlob, setLastBlob] = useState<Blob | null>(null)
-  const [thumb, setThumb] = useState<string>('')
+  const [addr, setAddr] = useState<null | {
+    name: string
+    addressRaw: string
+    street?: string
+    city?: string
+    state?: string
+    zip?: string
+    confAddr: number
+  }>(null)
+  const [qr, setQr] = useState<string>('')
 
-  function onCapture(blob: Blob, thumbUrl: string) {
-    setLastBlob(blob)
-    setThumb(thumbUrl)
+  function onAddressDone(a: any) {
+    setAddr(a)
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
-
-  function onSave(row: any) {
+  function onQrDetected(content: string) {
+    setQr(content)
+  }
+  function saveRow() {
+    if (!addr) return
     addRow({
       id: uuid(),
       scannedAt: new Date().toISOString(),
-      code: row.code,
-      addressRaw: row.addressRaw,
-      street: row.street,
-      city: row.city,
-      state: row.state,
-      zip: row.zip,
-      confCode: row.confCode,
-      confAddr: row.confAddr,
-      imageThumb: thumb
+      code: qr,
+      addressRaw: addr.addressRaw,
+      street: addr.street,
+      city: addr.city,
+      state: addr.state,
+      zip: addr.zip,
+      confCode: 1,
+      confAddr: addr.confAddr,
+      imageThumb: undefined
     })
-    alert('Saved to table')
-    setLastBlob(null)
+    alert('Saved mapping (Name+Address+QR)')
+    setAddr(null); setQr('')
   }
 
   return (
@@ -44,16 +52,29 @@ export default function App() {
         <a href="." className="badge">PWA – works offline</a>
       </header>
 
-      <CameraView onCapture={onCapture} />
-
-      {lastBlob && (
-        <ReviewCard blob={lastBlob} thumbDataUrl={thumb} onSave={onSave} />
+      {!addr && <AddressCapture onAddressDone={onAddressDone} />}
+      {addr && (
+        <div className="grid" style={{gap:16}}>
+          <div className="card grid" style={{gap:8}}>
+            <strong>Address ready</strong>
+            <div><span className="badge">Name</span><div>{addr.name}</div></div>
+            <div><span className="badge">Address</span><pre style={{whiteSpace:'pre-wrap'}}>{addr.addressRaw}</pre></div>
+          </div>
+          <QRCapture onQrDetected={onQrDetected} />
+          <div className="card grid" style={{gap:8}}>
+            <label>QR content (editable)</label>
+            <input value={qr} onChange={e=>setQr(e.target.value)} placeholder="QR code content"/>
+            <div className="row" style={{justifyContent:'flex-end'}}>
+              <button className="primary" onClick={saveRow} disabled={!qr}>Save mapping</button>
+            </div>
+          </div>
+        </div>
       )}
 
       <TableView />
 
       <footer style={{opacity:0.7}}>
-        <p>Privacy: photos are processed in your browser. Data is kept locally and **auto-deleted after 24 hours**.</p>
+        <p>Privacy: address OCR & QR reading happen in your browser. Data auto-deletes after 24 hours.</p>
       </footer>
     </div>
   )

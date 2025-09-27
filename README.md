@@ -101,6 +101,12 @@ Build output goes to `dist/`.
 - **Sharing not available**: The app will download the CSV if Web Share with files is not supported.
 
 ---
+## Two-step capture (Address then QR)
 
+- **Step 1:** Capture **Name & USA Address** using the camera. The app OCRs and extracts the name and address heuristically; you can edit before continuing.
+- **Step 2:** Scan a **QR code** to fill the Code field with the QR payload (editable).
+- **Save mapping:** Stores name, address, and QR as a row in the local table, which auto-deletes after 24 hours.
+
+QR scanning uses `@zxing/browser`. If scanning is not available, you can type/paste the QR payload in the provided field.
 ## License
 MIT
