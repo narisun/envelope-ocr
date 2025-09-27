@@ -1,12 +1,12 @@
 import React, { useEffect, useRef, useState } from 'react'
-import { BrowserMultiFormatReader, Result } from '@zxing/browser'
+import { BrowserMultiFormatReader } from '@zxing/browser'
 
 type Props = { onQrDetected: (content: string) => void }
 
 export default function QRCapture({ onQrDetected }: Props) {
   const videoRef = useRef<HTMLVideoElement>(null)
   const readerRef = useRef<BrowserMultiFormatReader | null>(null)
-  const controlsRef = useRef<{ stop: () => void } | null>(null)
+  const controlsRef = useRef<any | null>(null)
   const [err, setErr] = useState<string | null>(null)
   const [scanning, setScanning] = useState(false)
 
@@ -22,9 +22,9 @@ export default function QRCapture({ onQrDetected }: Props) {
       const devices = await BrowserMultiFormatReader.listVideoInputDevices()
       const preferred = devices.find(d => /back|rear|environment/i.test(d.label))?.deviceId
       controlsRef.current = await reader.decodeFromVideoDevice(
-        preferred ?? null,
+        preferred,           // pass undefined if none found
         videoRef.current!,
-        (result: Result | undefined, _err, controls) => {
+        (result: any, _err: any, controls: any) => {
           if (result) {
             onQrDetected(result.getText())
             controls.stop()
