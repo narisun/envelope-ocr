@@ -24,3 +24,14 @@ video, canvas{max-width:100%;width:100%;display:block}
 .handle{width:14px;height:14px;border-radius:50%;background:var(--primary);border:2px solid white;position:absolute}
 .footer{position:sticky;bottom:0;background:rgba(11,11,15,0.75);backdrop-filter: blur(8px);padding:12px;border-top:1px solid #1f2937}
 a{color:#7dd3fc}
+
+@media (max-width: 640px){
+  .container{padding:12px}
+  .row{gap:8px}
+  .card{padding:12px}
+  button{padding:10px 12px;border-radius:12px}
+  input, textarea, select{padding:8px 10px;border-radius:10px}
+  .table{font-size:14px}
+  .table th, .table td{padding:6px}
+}
+.card > div[style*="overflow-x"]{ -webkit-overflow-scrolling: touch; }
